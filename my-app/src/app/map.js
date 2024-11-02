@@ -1,4 +1,4 @@
-"use client"; // Ensures this is treated as a client component in Next.js
+"use client";
 
 import React, { useEffect } from "react";
 
@@ -7,7 +7,7 @@ const api_key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const CONFIGURATION = {
   ctaTitle: "Submit",
   mapOptions: {
-    center: { lat: 42.3601, lng: 71.0589 },
+    center: { lat: 42.3601, lng: -71.0589 },
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
