@@ -39,6 +39,12 @@ export default function LandmarkMap() {
   const [error, setError] = useState("");
   const [markersLoaded, setMarkersLoaded] = useState(false); // Track if markers have been loaded
 
+
+   // State for selected service types and languages
+   const [selectedServices, setSelectedServices] = useState([]);
+   const [selectedLanguages, setSelectedLanguages] = useState([]);
+
+   
   useEffect(() => {
     const loadGoogleMapsAPI = () => {
       if (document.getElementById("google-maps-script")) return;
@@ -84,6 +90,28 @@ export default function LandmarkMap() {
     const infowindow = new google.maps.InfoWindow();
     const newMarkers = [];
 
+    // Filter addresses based on selected services and languages
+
+
+
+
+    const fetchAddresses = async () => {
+    try {
+      const response = await fetch("/api/readData");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Fetch error:", response.status, errorText);
+        throw new Error("Failed to fetch addresses");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Fetch failed:", error);
+      throw error;
+    }
+  };
+
+
     addressData.forEach((location) => {
       const fullAddress = `${location.Street}, ${location.City}`;
       geocoder.geocode({ address: fullAddress }, (results, status) => {
@@ -121,6 +149,8 @@ export default function LandmarkMap() {
     setMarkers(newMarkers);
     setMarkersLoaded(true); // Mark markers as loaded
   };
+
+
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -206,6 +236,32 @@ export default function LandmarkMap() {
             <option value="miles">Miles</option>
             <option value="kilometers">Kilometers</option>
           </select>
+
+          {/* Checkbox list for Service Types */}
+          <h4>Service Types</h4>
+          {["Education", "Legal", "Housing/Shelter", "Healthcare", "Food", "Employment", "Cash Assistance", "Mental Health"].map((service) => (
+            <div key={service}>
+              <input
+                type="checkbox"
+                checked={selectedServices.includes(service)}
+                onChange={() => handleCheckboxChange(setSelectedServices, service)}
+              />
+              <label>{service}</label>
+            </div>
+          ))}
+
+          {/* Checkbox list for Languages */}
+          <h4>Languages</h4>
+          {["English", "Spanish", "French", "Portuguese", "Haitian Creole", "Arabic", "Mandarin", "Cantonese", "Somali", "Swahili", "Dari", "Pashto", "Maay Maay", "Darija"].map((language) => (
+            <div key={language}>
+              <input
+                type="checkbox"
+                checked={selectedLanguages.includes(language)}
+                onChange={() => handleCheckboxChange(setSelectedLanguages, language)}
+              />
+              <label>{language}</label>
+            </div>
+          ))}
           <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
         </form>
         <button onClick={showBostonMarkers} style={{ ...buttonStyle, marginTop: "10px", backgroundColor: "#6c757d" }}>Boston View</button>
