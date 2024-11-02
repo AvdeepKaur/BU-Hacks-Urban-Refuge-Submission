@@ -1,131 +1,121 @@
-import React, { useEffect } from "react";
+"use client"; // Ensures this is treated as a client component in Next.js
+
+import React, { useEffect, useState } from "react";
 
 const CONFIGURATION = {
-  ctaTitle: "Submit",
+  ctaTitle: "Load Locations",
   mapOptions: {
-    center: { lat: 37.4221, lng: -122.0841 },
+    center: { lat: 42.3601, lng: -71.0589 }, // Center map on Boston
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
-    zoom: 11,
+    zoom: 12,
     zoomControl: true,
     maxZoom: 22,
   },
 };
 
-const ADDRESS_COMPONENT_TYPES_IN_FORM = [
-  "location",
-  "locality",
-  "administrative_area_level_1",
-  "postal_code",
-  "country",
-];
+export default function LandmarkMap() {
+  const [map, setMap] = useState(null);
 
-export default function MapComponent() {
   useEffect(() => {
-    // Helper function to load Google Maps API dynamically
-    const loadGoogleMapsAPI = (callback) => {
-      if (document.getElementById("google-maps-script")) {
-        callback();
-        return;
-      }
+    const loadGoogleMapsAPI = () => {
+      if (document.getElementById("google-maps-script")) return;
 
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=${callback.name}`;
       script.id = "google-maps-script";
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onerror = () => console.error("Google Maps script could not load.");
+      script.onload = initMap;
       document.head.appendChild(script);
     };
 
-    // Function to initialize the map and set up geocoding
     const initMap = () => {
-      const mapElement = document.getElementById("map");
-      if (!mapElement) {
-        console.error("Map element not found!");
-        return;
-      }
-
-      const map = new google.maps.Map(mapElement, CONFIGURATION.mapOptions);
-      const geocoder = new google.maps.Geocoder();
-
-      ADDRESS_COMPONENT_TYPES_IN_FORM.forEach((componentType) => {
-        const inputEl = document.getElementById(`${componentType}-input`);
-        if (inputEl) {
-          inputEl.addEventListener("blur", () => geocodeAddress(geocoder, map));
-          inputEl.addEventListener("keyup", (event) => {
-            if (event.key === "Enter") {
-              geocodeAddress(geocoder, map);
-            }
-          });
-        }
-      });
+      const newMap = new google.maps.Map(document.getElementById("map"), CONFIGURATION.mapOptions);
+      setMap(newMap);
     };
 
-    // Geocode and render address on the map
-    const geocodeAddress = (geocoder, map) => {
-      const address = ADDRESS_COMPONENT_TYPES_IN_FORM.map(
-        (componentType) => document.getElementById(`${componentType}-input`)?.value || ""
-      ).join(" ");
-
-      geocoder.geocode({ address }, (results, status) => {
-        if (status === "OK" && results[0]) {
-          const place = results[0];
-          const marker = new google.maps.Marker({
-            map,
-            position: place.geometry.location,
-          });
-          map.setCenter(place.geometry.location);
-          marker.setPosition(place.geometry.location);
-        }
-      });
-    };
-
-    // Load the Google Maps API and initialize the map
-    loadGoogleMapsAPI(initMap);
+    loadGoogleMapsAPI();
   }, []);
 
+  const fetchAddresses = async () => {
+    try {
+      const response = await fetch("/api/readData");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Fetch error:", response.status, errorText);
+        throw new Error("Failed to fetch addresses");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Fetch failed:", error);
+      throw error;
+    }
+  };
+  
+
+  // Plot addresses as markers on the map
+  const plotAddresses = async () => {
+    if (!map) return; // Ensure the map has loaded
+    const addressData = await fetchAddresses();
+    const geocoder = new google.maps.Geocoder();
+    const infowindow = new google.maps.InfoWindow();
+
+    addressData.forEach((location) => {
+      const fullAddress = `${location.Street}, ${location.City}`;
+      geocoder.geocode({ address: fullAddress }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const marker = new google.maps.Marker({
+            map,
+            position: results[0].geometry.location,
+            title: location["Name of Organization"],
+          });
+
+          // Info window content on marker click
+          marker.addListener("click", () => {
+            infowindow.setContent(`
+              <div>
+                <h2>${location["Name of Organization"]}</h2>
+                <p>${location["Summary of Services"]}</p>
+                <p><strong>Address:</strong> ${fullAddress}</p>
+                <p><strong>Website:</strong> <a href="${location.Website}" target="_blank">${location.Website}</a></p>
+              </div>
+            `);
+            infowindow.open(map, marker);
+          });
+        }
+      });
+    });
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    plotAddresses();
+  };
+
   return (
-    <div style={{ display: "flex", flexDirection: "row" }}>
-      <div style={{ padding: "20px", width: "300px", backgroundColor: "#f0f0f0", border: "1px solid #ddd" }}>
-        <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
-          <img
-            src="https://fonts.gstatic.com/s/i/googlematerialicons/location_pin/v5/24px.svg"
-            alt="Location icon"
-            style={{ marginRight: "8px" }}
-          />
-          <span style={{ fontSize: "18px", fontWeight: "500" }}>Address Selection</span>
-        </div>
-        <input type="text" placeholder="Address" id="location-input" style={inputStyle} />
-        <input type="text" placeholder="Apt, Suite, etc (optional)" style={inputStyle} />
-        <input type="text" placeholder="City" id="locality-input" style={inputStyle} />
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <input type="text" placeholder="State/Province" id="administrative_area_level_1-input" style={halfInputStyle} />
-          <input type="text" placeholder="Zip/Postal code" id="postal_code-input" style={halfInputStyle} />
-        </div>
-        <input type="text" placeholder="Country" id="country-input" style={inputStyle} />
-        <button style={{ marginTop: "20px", padding: "10px", backgroundColor: "#007bff", color: "white", border: "none" }}>
-          {CONFIGURATION.ctaTitle}
-        </button>
+    <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
+      <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
+        <h3>Load Locations from CSV</h3>
+        <form onSubmit={handleFormSubmit}>
+          <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
+        </form>
       </div>
-      <div id="map" style={{ height: "500px", width: "600px", marginLeft: "20px", border: "1px solid #ddd" }}></div>
+      <div id="map" style={{ height: "500px", width: "600px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
   );
 }
 
-// Common styling
-const inputStyle = {
-  height: "30px",
+// Styles for the input fields and button
+const buttonStyle = {
   width: "100%",
-  margin: "8px 0",
-  border: "1px solid #ccc",
+  padding: "10px",
+  backgroundColor: "#007bff",
+  color: "white",
+  border: "none",
   borderRadius: "4px",
-  padding: "0 10px",
-  fontSize: "14px",
-};
-
-const halfInputStyle = {
-  ...inputStyle,
-  width: "48%",
+  fontSize: "16px",
+  cursor: "pointer",
 };
