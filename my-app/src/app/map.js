@@ -82,6 +82,9 @@ export default function LandmarkMap() {
     }
   };
 
+
+
+  
   const plotAddresses = async () => {
     if (!map) return;
 
@@ -95,21 +98,7 @@ export default function LandmarkMap() {
 
 
 
-    const fetchAddresses = async () => {
-    try {
-      const response = await fetch("/api/readData");
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Fetch error:", response.status, errorText);
-        throw new Error("Failed to fetch addresses");
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Fetch failed:", error);
-      throw error;
-    }
-  };
+    
 
 
     addressData.forEach((location) => {
@@ -215,10 +204,18 @@ export default function LandmarkMap() {
   return (
     <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
       <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
-        <p> 
-        MapRefuge
-    
-        </p>
+       
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom:"15px"}}>
+  <img 
+    src="/images/urban.png" 
+    alt="MapRefuge Logo" 
+    style={{ width: "100px", height: "auto" }} // Adjust the size as needed
+  />
+  <p style={{ fontSize: "35px", fontFamily: "Cocomat Pro", fontWeight: "bold", textTransform: "uppercase", margin: "0 auto" }}> 
+    Map Refuge
+  </p>
+</div>
+
         
         
         
