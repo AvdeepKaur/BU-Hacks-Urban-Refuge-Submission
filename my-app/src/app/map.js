@@ -185,6 +185,13 @@ export default function LandmarkMap() {
   return (
     <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
       <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
+        <p> 
+        MapRefuge
+    
+        </p>
+        
+        
+        
         <h3>Load Locations from CSV</h3>
         <form onSubmit={handleFormSubmit}>
           {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
