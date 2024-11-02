@@ -210,7 +210,7 @@ export default function LandmarkMap() {
         </form>
         <button onClick={showBostonMarkers} style={{ ...buttonStyle, marginTop: "10px", backgroundColor: "#6c757d" }}>Boston View</button>
       </div>
-      <div id="map" style={{ height: "500px", width: "600px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
+      <div id="map" style={{ height: "750px", width: "1000px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
   );
 }
