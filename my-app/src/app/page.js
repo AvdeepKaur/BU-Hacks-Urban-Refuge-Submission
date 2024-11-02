@@ -2,6 +2,8 @@
 
 import React, { useEffect } from "react";
 
+const api_key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 const CONFIGURATION = {
   ctaTitle: "Submit",
   mapOptions: {
@@ -12,43 +14,40 @@ const CONFIGURATION = {
     zoom: 11,
     zoomControl: true,
     maxZoom: 22,
+    styles: [
+      { featureType: "all", elementType: "labels", stylers: [{ visibility: "on" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ visibility: "on" }] },
+      { featureType: "poi.business", stylers: [{ visibility: "off" }] }, // Hide restaurants, stores, and other businesses
+      { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#aadaff", visibility: "on" }] },
+      { featureType: "poi.museum", elementType: "geometry", stylers: [{ visibility: "on" }] },
+      { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ visibility: "on" }] },
+    ],
   },
 };
 
-export default function MapComponent() {
+export default function LandmarkMap() {
   useEffect(() => {
-    // Load Google Maps API dynamically
     const loadGoogleMapsAPI = () => {
-      if (document.getElementById("google-maps-script")) {
-        initMap();
-        return;
-      }
+      if (document.getElementById("google-maps-script")) return;
 
       const script = document.createElement("script");
       script.id = "google-maps-script";
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCA3yaFbVmsBYqh5O1R3Rd-6NEESD4TdbI&libraries=places&callback=initMap`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${api_key}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onerror = () => console.error("Google Maps script could not load.");
+      script.onload = initMap;
       document.head.appendChild(script);
-
-      window.initMap = initMap;
     };
 
     const initMap = () => {
-      const mapElement = document.getElementById("map");
-      if (!mapElement) {
-        console.error("Map element not found!");
-        return;
-      }
-
-      const map = new google.maps.Map(mapElement, CONFIGURATION.mapOptions);
+      const map = new google.maps.Map(document.getElementById("map"), CONFIGURATION.mapOptions);
       const geocoder = new google.maps.Geocoder();
+      const infowindow = new google.maps.InfoWindow();
 
       const handleFormSubmit = (e) => {
         e.preventDefault();
         const address = getAddressFromForm();
-        geocodeAddress(geocoder, map, address);
+        geocodeAddress(geocoder, map, infowindow, address);
       };
 
       document.getElementById("address-form").addEventListener("submit", handleFormSubmit);
@@ -59,15 +58,30 @@ export default function MapComponent() {
       return fields.map((field) => document.getElementById(`${field}-input`).value).join(" ");
     };
 
-    const geocodeAddress = (geocoder, map, address) => {
+    const geocodeAddress = (geocoder, map, infowindow, address) => {
       geocoder.geocode({ address }, (results, status) => {
         if (status === "OK" && results[0]) {
-          const location = results[0].geometry.location;
-          map.setCenter(location);
-          new google.maps.Marker({
+          const place = results[0];
+          map.setCenter(place.geometry.location);
+          const marker = new google.maps.Marker({
             map,
-            position: location,
+            position: place.geometry.location,
           });
+
+          const content = `
+            <div>
+              <h2>${place.formatted_address}</h2>
+              <p>Latitude: ${place.geometry.location.lat()}</p>
+              <p>Longitude: ${place.geometry.location.lng()}</p>
+            </div>`;
+
+          marker.addListener("click", () => {
+            infowindow.setContent(content);
+            infowindow.open(map, marker);
+          });
+
+          infowindow.setContent(content);
+          infowindow.open(map, marker);
         } else {
           console.error("Geocode was not successful for the following reason: " + status);
         }
@@ -78,7 +92,6 @@ export default function MapComponent() {
   }, []);
 
   return (
-<<<<<<< HEAD
     <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
       <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
         <h3>Enter Address</h3>
@@ -88,35 +101,14 @@ export default function MapComponent() {
           <input type="text" placeholder="State/Province" id="administrative_area_level_1-input" style={inputStyle} />
           <input type="text" placeholder="Zip/Postal code" id="postal_code-input" style={inputStyle} />
           <input type="text" placeholder="Country" id="country-input" style={inputStyle} />
-          <button type="submit" style={buttonStyle}>Submit</button>
+          <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
         </form>
       </div>
       <div id="map" style={{ height: "500px", width: "600px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
-=======
-    <>
-      <head>
-        <title>Add a Map using HTML</title>
-      </head>
-      <body>
-        <gmp-map
-          center="42.3601,-71.0589"
-          zoom="10"
-          map-id="DEMO_MAP_ID"
-          style={{ height: '400px' }}
-        ></gmp-map>
-        <Script
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCA3yaFbVmsBYqh5O1R3Rd-6NEESD4TdbI&libraries=maps&v=beta"
-          strategy="lazyOnload"
-        />
-        <Script type="module" src="./index.js" strategy="lazyOnload" />
-      </body>
-    </>
->>>>>>> 5b5328fe6250ab7cddaa4064dc4df0cae62d2d77
   );
 }
 
-// Styles for the input fields and button
 const inputStyle = {
   width: "100%",
   margin: "10px 0",

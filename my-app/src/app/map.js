@@ -13,7 +13,6 @@ const CONFIGURATION = {
   },
 };
 
-<<<<<<< HEAD
 const ADDRESS_COMPONENT_TYPES_IN_FORM = [
   "location",
   "locality",
@@ -21,15 +20,6 @@ const ADDRESS_COMPONENT_TYPES_IN_FORM = [
   "postal_code",
   "country",
 ];
-=======
-async function initMap() {
-  const { Map } = await google.maps.importLibrary("maps");
-  map = new Map(document.getElementById("map"), {
-    center: { lat: 42.3601, lng: 71.0589 },
-    zoom: 8,
-  });
-}
->>>>>>> 5b5328fe6250ab7cddaa4064dc4df0cae62d2d77
 
 export default function MapComponent() {
   useEffect(() => {
