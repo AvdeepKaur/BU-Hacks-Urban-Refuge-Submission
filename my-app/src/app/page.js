@@ -1,5 +1,6 @@
 import React from "react";
-import MapComponent from "./map.js";
+import Header from "./header.js";
+import LandmarkMap from "./map.js";
 
 function Home() {
   return (
@@ -8,7 +9,8 @@ function Home() {
         <title>Urban Refuge</title>
       </head>
       <body>
-        <MapComponent />
+        <Header />
+        <LandmarkMap />
       </body>
     </>
   );
