@@ -2,11 +2,15 @@
 
 ### Hackers: Avdeep Kaur, Brian Zeng, Kelvin Lin, Olivia Ma
 
->  - Main Track: **Comet Care**
-> -  Side Tracks:
-    -   **Urban Refuge**: A GIS-Powered, Privacy-First Challenge
-    -   **MLH**: Best .Tech Domain Name
-    -   **MLH** : Most Creative Adobe Express Add-on
+-- Main Track: **Comet Care**
+
+-- Side Tracks:
+
+-  **Urban Refuge**: A GIS-Powered, Privacy-First Challenge
+
+-  **MLH**: Best .Tech Domain Name
+
+-  **MLH** : Most Creative Adobe Express Add-on
 
 # Welcome to MapRefuge!🗺️📌
 

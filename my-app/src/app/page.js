@@ -9,7 +9,7 @@ function Home() {
       </head>
       <body>
         <gmp-map
-          center="37.4220656,-122.0840897"
+          center="42.3601,-71.0589"
           zoom="10"
           map-id="DEMO_MAP_ID"
           style={{ height: '400px' }}
