@@ -2,8 +2,15 @@
 
 ### Hackers: Avdeep Kaur, Brian Zeng, Kelvin Lin, Olivia Ma
 
- >Main Track: Comet Care
- >Side Track: Urban Refuge
+-- Main Track: **Comet Care**
+
+-- Side Tracks:
+
+-  **Urban Refuge**: A GIS-Powered, Privacy-First Challenge
+
+-  **MLH**: Best .Tech Domain Name
+
+-  **MLH** : Most Creative Adobe Express Add-on
 
 # Welcome to MapRefuge!🗺️📌
 
@@ -13,12 +20,13 @@ Built on a foundation of privacy, MapRefuge leverages **Cloudflare**’s protect
 
 ## Main Features
 
-- [x]   **Privacy-First Design**: No tracking of user location or IP. Cloudflare shields user data, and the site operates without location-based requests.
-- [x]  **Resource Mapping**: Displays hard-coded resources from a CSV file, avoiding real-time tracking.
-- [x]   **Google Maps Integration**: Interactive map for viewing nearby essential services and resources.
-- [x]  **Filter and Search**: Allows users to filter resources based on accessibility, affordability, and type of service.
--  [ ] **User-Contributed Tags and Ratings**: Users can add relevant tags (e.g., LGBTQ+ friendly, wheelchair accessible) to improve information accuracy.
--  [x]  **Detailed Resource Information**: Provides basic details, ratings, and reviews for each location.
+-   **Privacy-First Design**: No tracking of user location or IP. Cloudflare shields user data, and the site operates without location-based requests.
+-   **Resource Mapping**: Displays hard-coded resources from a CSV file, avoiding real-time tracking.
+-   **Google Maps Integration**: Interactive map for viewing nearby essential services and resources.
+-   **Filter and Search**: Allows users to filter resources based on accessibility, affordability, and type of service.
+-   **User-Contributed Tags and Ratings**: Users can add relevant tags (e.g., LGBTQ+ friendly, wheelchair accessible) to improve information accuracy.
+-   **Detailed Resource Information**: Provides basic details, ratings, and reviews for each location.
+
 ## Project Structure
 
 - **Backend**🌍: Imports resource data from a CSV file and renders markers on the map.

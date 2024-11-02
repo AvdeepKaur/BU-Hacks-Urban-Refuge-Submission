@@ -25,7 +25,7 @@ function Home() {
         style={{ height: '400px' }} // Correct usage of the style prop
       >
         <gmp-map
-          center="37.4220656,-122.0840897"
+          center="42.3601,-71.0589"
           zoom="10"
           map-id="DEMO_MAP_ID"
         ></gmp-map>

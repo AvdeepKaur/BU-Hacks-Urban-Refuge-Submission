@@ -78,6 +78,7 @@ export default function MapComponent() {
   }, []);
 
   return (
+<<<<<<< HEAD
     <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
       <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
         <h3>Enter Address</h3>
@@ -92,6 +93,26 @@ export default function MapComponent() {
       </div>
       <div id="map" style={{ height: "500px", width: "600px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
+=======
+    <>
+      <head>
+        <title>Add a Map using HTML</title>
+      </head>
+      <body>
+        <gmp-map
+          center="42.3601,-71.0589"
+          zoom="10"
+          map-id="DEMO_MAP_ID"
+          style={{ height: '400px' }}
+        ></gmp-map>
+        <Script
+          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCA3yaFbVmsBYqh5O1R3Rd-6NEESD4TdbI&libraries=maps&v=beta"
+          strategy="lazyOnload"
+        />
+        <Script type="module" src="./index.js" strategy="lazyOnload" />
+      </body>
+    </>
+>>>>>>> 5b5328fe6250ab7cddaa4064dc4df0cae62d2d77
   );
 }
 
