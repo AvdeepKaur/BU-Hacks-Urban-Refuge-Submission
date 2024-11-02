@@ -12,7 +12,16 @@ const CONFIGURATION = {
     zoom: 12,
     zoomControl: true,
     maxZoom: 22,
+    styles: [
+      { featureType: "all", elementType: "labels", stylers: [{ visibility: "on" }] },
+      { featureType: "road", elementType: "geometry", stylers: [{ visibility: "on" }] },
+      { featureType: "poi.business", stylers: [{ visibility: "off" }] }, // Hide restaurants, stores, and other businesses
+      { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#aadaff", visibility: "on" }] },
+      { featureType: "poi.museum", elementType: "geometry", stylers: [{ visibility: "on" }] },
+      { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ visibility: "on" }] },
+    ],
   },
+  markerIcon: "/images/blue_pin.png"
 };
 
 export default function LandmarkMap() {
@@ -67,10 +76,17 @@ export default function LandmarkMap() {
       const fullAddress = `${location.Street}, ${location.City}`;
       geocoder.geocode({ address: fullAddress }, (results, status) => {
         if (status === "OK" && results[0]) {
+          
+          const position = results[0].geometry.location;
+
           const marker = new google.maps.Marker({
             map,
-            position: results[0].geometry.location,
+            position,
             title: location["Name of Organization"],
+            icon: {
+              url: CONFIGURATION.markerIcon,
+              scaledSize: new google.maps.Size(30, 45), // Set size of the icon
+            },
           });
 
           // Info window content on marker click
