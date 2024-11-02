@@ -7,7 +7,7 @@ const api_key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 const CONFIGURATION = {
   ctaTitle: "Submit",
   mapOptions: {
-    center: { lat: 37.4221, lng: -122.0841 },
+    center: { lat: 42.3601, lng: 71.0589 },
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
@@ -45,7 +45,7 @@ const CONFIGURATION = {
   },
 };
 
-export default function LandmarkMap() {
+export default function MapComponent() {
   useEffect(() => {
     const loadGoogleMapsAPI = () => {
       if (document.getElementById("google-maps-script")) return;
