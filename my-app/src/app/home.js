@@ -17,13 +17,9 @@ function Home() {
   return (
     <>
       <Head>
-        <title>Add a Map using HTML</title>
-       
+        <title>Urban Refuge</title>
       </Head>
-      <div
-        id="map"
-        style={{ height: '400px' }} // Correct usage of the style prop
-      >
+      <div id="map" style={{ height: "400px", width: "500px" }}>
         <gmp-map
           center="42.3601,-71.0589"
           zoom="10"

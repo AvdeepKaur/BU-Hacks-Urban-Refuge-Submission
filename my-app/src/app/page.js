@@ -1,24 +1,15 @@
-import React from 'react';
-import Script from 'next/script';
-
+"use client";
+import React from "react";
+import Script from "next/script";
+import MapComponent from "./mapcomponent.js";
 function Home() {
   return (
     <>
       <head>
-        <title>Add a Map using HTML</title>
+        <title>Urban Refuge</title>
       </head>
       <body>
-        <gmp-map
-          center="42.3601,-71.0589"
-          zoom="10"
-          map-id="DEMO_MAP_ID"
-          style={{ height: '400px' }}
-        ></gmp-map>
-        <Script
-          src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCA3yaFbVmsBYqh5O1R3Rd-6NEESD4TdbI&libraries=maps&v=beta"
-          strategy="lazyOnload"
-        />
-        <Script type="module" src="./index.js" strategy="lazyOnload" />
+        <MapComponent />
       </body>
     </>
   );

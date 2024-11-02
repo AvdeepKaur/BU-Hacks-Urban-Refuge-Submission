@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect } from "react";
 
 let map;
@@ -5,8 +6,8 @@ let map;
 async function initMap() {
   const { Map } = await google.maps.importLibrary("maps");
   map = new Map(document.getElementById("map"), {
-    center: { lat: 42.3601, lng: 71.0589 },
-    zoom: 8,
+    center: { lat: 42.3601, lng: -71.0589 },
+    zoom: 13,
   });
 }
 
@@ -15,13 +16,13 @@ export default function MapComponent() {
     // Check if the Google Maps script is already added
     if (!document.querySelector("script#google-maps")) {
       const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=maps&v=beta`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCA3yaFbVmsBYqh5O1R3Rd-6NEESD4TdbI&libraries=maps&v=beta`;
       script.id = "google-maps";
       script.async = true;
       script.defer = true;
       script.onload = initMap;
       document.head.appendChild(script);
-    } else {
+    } else if (typeof google !== "undefined") {
       initMap();
     }
   }, []);
