@@ -4,58 +4,51 @@ import Fuse from "fuse.js";
 
 const AssistantChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([{ role: "assistant", content: "Hello! I'm here to help you find resources. Let's get started!" }]);
+  const [messages, setMessages] = useState([
+    { role: "assistant", content: "Hello! To help you find resources, please tell me your location, the type of service you need, and your preferred language (e.g., 'I'm in Boston, looking for food services, and prefer English.')." }
+  ]);
   const [input, setInput] = useState("");
   const [resources, setResources] = useState([]);
   const [fuse, setFuse] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const [userLocation, setUserLocation] = useState(null);
-  const [userLanguage, setUserLanguage] = useState(null);
-  const [userServiceType, setUserServiceType] = useState(null);
-
-  const [conversationStep, setConversationStep] = useState(0);
   const messagesEndRef = useRef(null);
 
   const toggleChatbox = () => setIsOpen(!isOpen);
 
-  // Smoothly scroll to the latest message
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages]);
 
-  // Load and parse the CSV file when the component mounts
   useEffect(() => {
     const fetchResources = async () => {
       try {
         const response = await fetch("/resources.csv");
         const csvText = await response.text();
 
-        // Parse CSV text using PapaParse
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
           complete: (result) => {
             const parsedData = result.data.map((item) => ({
               ...item,
-              "Service Type": item["Service Type"]?.split(/,\s*/).map(type => type.trim()) || [],
-              "Languages": item["Languages"]?.split(/,\s*/).map(lang => lang.trim()) || []
+              "Service Type": item["Service Type"]?.split(",").map((service) => service.trim()) || [],
+              "Languages": item["Languages"]?.split("-").map((lang) => lang.trim()) || [],
             }));
+            setResources(parsedData);
 
-            setResources(parsedData); // Store tokenized data in state
-
-            // Initialize Fuse.js with looser matching options
             const fuseInstance = new Fuse(parsedData, {
               keys: [
-                { name: "Service Type", weight: 0.7 },
+                { name: "City/State/ZIP", weight: 0.4 },
+                { name: "Service Type", weight: 0.5 },
                 { name: "Languages", weight: 0.3 },
-                { name: "City/State/ZIP", weight: 0.2 },
               ],
-              threshold: 0.6, // Looser matching
-              distance: 100,  // Allows more flexibility in match distance
-              ignoreLocation: true, // Ignores exact location of the match within text
+              threshold: 0.6,
+              distance: 200,
+              ignoreLocation: true,
             });
             setFuse(fuseInstance);
           },
@@ -68,29 +61,40 @@ const AssistantChatbot = () => {
     fetchResources();
   }, []);
 
-  const searchResources = () => {
-    if (!fuse) return [];
-  
-    // Build the query based on user inputs
-    const query = `${userServiceType || ""} ${userLanguage || ""} ${userLocation || ""}`.trim();
-  
-    // Run Fuse.js search with the query
-    const results = fuse.search(query);
-  
-    // Return only the top match if there are results
-    return results.length > 0 ? [results[0].item] : [];
-  };
+  const extractEntities = async (userInput) => {
+    const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+    if (!apiKey) {
+      console.error("API key is missing. Make sure it is set in .env.local");
+      return {};
+    }
 
-  const formatRecommendation = (resource) => (
-    <div>
-      <strong>{resource["Name of Organization"]}</strong>
-      <br />
-      <p><strong>Summary:</strong> {resource["Summary of Services"]}</p>
-      <p><strong>Location:</strong> {resource["City/State/ZIP"]}</p>
-      <p><strong>Website:</strong> {resource["Website"] || "N/A"}</p>
-      <p><strong>Contact:</strong> {resource["Phone Number"] || "N/A"}</p>
-    </div>
-  );
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "user",
+              content: `Please respond only in JSON format. Extract location, service type, and language from this message: "${userInput}". Use only the following exact terms if found: Service types = ["Food", "Housing", "Legal", "Education", "Healthcare", "Employment", "Cash Assistance", "Mental Health"], Languages = ["English", "Spanish", "French", "Portuguese", "Haitian Creole", "Arabic", "Mandarin", "Cantonese", "Somali", "Swahili", "Dari", "Pashto", "Maay Maay", "Darija"]. For example: {"location": "city", "service": "food", "language": "English"}`,
+            }
+          ],
+        }),
+      });
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content.trim();
+      const extractedData = JSON.parse(content);
+      return extractedData;
+    } catch (error) {
+      console.error("Error extracting entities:", error);
+      return {};
+    }
+  };
 
   const displayTypingEffect = (text) => {
     setIsTyping(true);
@@ -106,63 +110,71 @@ const AssistantChatbot = () => {
         clearInterval(interval);
         setIsTyping(false);
       }
-    }, 25);
+    }, 30);
   };
 
-  const resetConversation = () => {
-    setUserLocation(null);
-    setUserLanguage(null);
-    setUserServiceType(null);
-    setConversationStep(0);
+  const performSearch = (criteria) => {
+    const { location, service, language } = criteria;
+    const results = fuse.search(`${service} ${language} ${location}`);
+
+    const fullMatches = results
+      .map(result => result.item)
+      .filter(item => 
+        item["Service Type"].includes(service) &&
+        item.Languages.includes(language) &&
+        item["City/State/ZIP"].toLowerCase().includes(location.toLowerCase())
+      );
+
+    const partialMatches = results
+      .map(result => result.item)
+      .filter(item =>
+        item["Service Type"].includes(service) || 
+        item.Languages.includes(language) ||
+        item["City/State/ZIP"].toLowerCase().includes(location.toLowerCase())
+      );
+
+    const matchesToShow = fullMatches.length > 0 ? fullMatches : partialMatches;
+
+    const response = matchesToShow.length > 0
+      ? matchesToShow.map(formatRecommendation).join("<br><br>")
+      : "I'm sorry, but I couldn't find any resources that match all your criteria. Please try rephrasing or providing more details.";
+
+    setMessages((prevMessages) => [...prevMessages, { role: "assistant", content: "" }]);
+    displayTypingEffect(response);
   };
 
-  const sendMessage = () => {
-    if (!input.trim() || input.length > 500) return;
+  const formatRecommendation = (resource) => (
+` <strong>${resource["Name of Organization"]}</strong><br>
+<strong>Summary:</strong> ${resource["Summary of Services"]}<br>
+<strong>Location:</strong> ${resource["City/State/ZIP"]}<br>
+<strong>Website:</strong> <a href="${resource["Website"] || "#"}" target="_blank">${resource["Website"] || "N/A"}</a><br>
+<strong>Contact:</strong> ${resource["Phone Number"] || "N/A"}`
+  );
+
+  const sendMessage = async () => {
+    if (!input.trim() || input.length > 500 || isProcessing) return;
 
     const userMessage = { role: "user", content: input };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
+    setIsProcessing(true);
 
-    let botMessageContent = "";
+    const { location, service, language } = await extractEntities(input);
 
-    switch (conversationStep) {
-      case 0:
-        botMessageContent = "Let's start by getting your location. Could you please tell me your city or area?";
-        setConversationStep(1);
-        break;
-      case 1:
-        setUserLocation(input);
-        botMessageContent = "Thank you! What language(s) are you most comfortable with?";
-        setConversationStep(2);
-        break;
-      case 2:
-        setUserLanguage(input);
-        botMessageContent = "Got it! Lastly, what type of services are you looking for?";
-        setConversationStep(3);
-        break;
-      case 3:
-        setUserServiceType(input);
-        const matches = searchResources();
-
-        if (matches.length > 0) {
-          botMessageContent = formatRecommendation(matches[0]);
-          resetConversation();
-        } else {
-          botMessageContent = "I'm sorry, but I couldn't find any resources that match all your criteria. Let's start over. Please provide more specific details.";
-          resetConversation();
-        }
-        break;
-      default:
-        botMessageContent = "How can I assist you today?";
-        resetConversation();
-    }
-
-    setMessages((prevMessages) => [...prevMessages, { role: "assistant", content: "" }]);
-    if (typeof botMessageContent === "string") {
-      displayTypingEffect(botMessageContent);
+    if (location && service && language) {
+      performSearch({ location, service, language });
     } else {
-      setMessages((prevMessages) => [...prevMessages.slice(0, -1), { role: "assistant", content: botMessageContent }]);
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        {
+          role: "assistant",
+          content: ""
+        },
+      ]);
+      displayTypingEffect("To provide accurate recommendations, please include your location, service type, and preferred language in one message.");
     }
+
     setInput("");
+    setIsProcessing(false);
   };
 
   return (
@@ -174,9 +186,11 @@ const AssistantChatbot = () => {
         <div style={chatboxStyle}>
           <div style={messagesStyle}>
             {messages.map((msg, index) => (
-              <div key={index} style={msg.role === "user" ? userMessageStyle : assistantMessageStyle}>
-                {typeof msg.content === "string" ? msg.content : msg.content}
-              </div>
+              <div
+                key={index}
+                style={msg.role === "user" ? userMessageStyle : assistantMessageStyle}
+                dangerouslySetInnerHTML={{ __html: msg.content }} // Render HTML directly
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>
@@ -185,9 +199,9 @@ const AssistantChatbot = () => {
             value={input}
             onChange={(e) => setInput(e.target.value.slice(0, 500))}
             placeholder="Type your message..."
-            disabled={isTyping}
+            disabled={isTyping || isProcessing}
           />
-          <button onClick={sendMessage} style={sendButtonStyle} disabled={isTyping}>
+          <button onClick={sendMessage} style={sendButtonStyle} disabled={isTyping || isProcessing}>
             Send
           </button>
         </div>
@@ -195,7 +209,6 @@ const AssistantChatbot = () => {
     </div>
   );
 };
-
 // Styling
 const chatButtonStyle = {
   position: "fixed",
