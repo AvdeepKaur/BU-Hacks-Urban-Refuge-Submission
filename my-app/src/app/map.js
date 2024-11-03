@@ -98,13 +98,16 @@ export default function LandmarkMap() {
     const newMarkers = [];
 
     addressData.forEach((location) => {
-      const serviceTypes = location["Service Type"].split(",").map(service => service.trim());
-      const languages = location["Services offered in these languages"].split("-").map(lang => lang.trim());
+      const serviceTypes = location["Service Type"].split(",").map((service) => service.trim());
+      const languages = location["Services offered in these languages"].split("-").map((lang) => lang.trim());
 
-      const matchedServices = selectedServices.filter((service) => serviceTypes.includes(service));
-      const matchedLanguages = selectedLanguages.filter((language) => languages.includes(language));
+      const matchedServices = selectedServices.some((service) => serviceTypes.includes(service));
+      const matchedLanguages = selectedLanguages.some((language) => languages.includes(language));
 
-      if (matchedServices.length > 0 || matchedLanguages.length > 0) {
+      // Filter criteria based on selected services and languages
+      const shouldInclude = selectedServices.length > 0 ? matchedServices : matchedLanguages;
+
+      if (shouldInclude) {
         const fullAddress = `${location.Street}, ${location.City}`;
         geocoder.geocode({ address: fullAddress }, (results, status) => {
           if (status === "OK" && results[0]) {
@@ -123,8 +126,8 @@ export default function LandmarkMap() {
             newMarkers.push(marker);
 
             const matchedTags = `
-              <p><strong>Matched Services:</strong> ${matchedServices.join(", ") || "None"}</p>
-              <p><strong>Matched Languages:</strong> ${matchedLanguages.join(", ") || "None"}</p>
+              <p><strong>Matched Services:</strong> ${selectedServices.filter((service) => serviceTypes.includes(service)).join(", ") || "None"}</p>
+              <p><strong>Matched Languages:</strong> ${selectedLanguages.filter((language) => languages.includes(language)).join(", ") || "None"}</p>
             `;
 
             marker.addListener("click", () => {
@@ -229,49 +232,26 @@ export default function LandmarkMap() {
             Map Refuge
           </p>
         </div>
-
         <h3>Load Locations from CSV</h3>
         <form onSubmit={handleFormSubmit}>
           {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
-          <input
-            type="text"
-            placeholder="Search Address/City/Country"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
-          />
-          <input
-            type="number"
-            placeholder="Distance"
-            value={distance}
-            onChange={(e) => setDistance(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
-          />
+          <input type="text" placeholder="Search Address/City/Country" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: "100%", marginBottom: "10px", padding: "8px" }} />
+          <input type="number" placeholder="Distance" value={distance} onChange={(e) => setDistance(e.target.value)} style={{ width: "100%", marginBottom: "10px", padding: "8px" }} />
           <select value={unit} onChange={(e) => setUnit(e.target.value)} style={{ width: "100%", marginBottom: "10px", padding: "8px" }}>
             <option value="miles">Miles</option>
             <option value="kilometers">Kilometers</option>
           </select>
-
           <h4>Service Types</h4>
           {["Education", "Legal", "Housing/Shelter", "Healthcare", "Food", "Employment", "Cash Assistance", "Mental Health"].map((service) => (
             <div key={service}>
-              <input
-                type="checkbox"
-                checked={selectedServices.includes(service)}
-                onChange={() => handleCheckboxChange(setSelectedServices, service)}
-              />
+              <input type="checkbox" checked={selectedServices.includes(service)} onChange={() => handleCheckboxChange(setSelectedServices, service)} />
               <label>{service}</label>
             </div>
           ))}
-
           <h4>Languages</h4>
           {["English", "Spanish", "French", "Portuguese", "Haitian Creole", "Arabic", "Mandarin", "Cantonese", "Somali", "Swahili", "Dari", "Pashto", "Maay Maay", "Darija"].map((language) => (
             <div key={language}>
-              <input
-                type="checkbox"
-                checked={selectedLanguages.includes(language)}
-                onChange={() => handleCheckboxChange(setSelectedLanguages, language)}
-              />
+              <input type="checkbox" checked={selectedLanguages.includes(language)} onChange={() => handleCheckboxChange(setSelectedLanguages, language)} />
               <label>{language}</label>
             </div>
           ))}
