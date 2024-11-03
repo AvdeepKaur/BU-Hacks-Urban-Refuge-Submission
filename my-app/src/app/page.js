@@ -1,19 +1,37 @@
-import React from "react";
-import Header from "./header.js";
-import LandmarkMap from "./map.js";
+"use client";
+import React, { useState } from "react";
+import Forum from "./forumComponent.js";
+import Map from "./mapComponent.js";
 
-function Home() {
+const CONFIGURATION = {
+  bostonBounds: {
+    north: 42.405,
+    south: 42.32,
+    east: -71.03,
+    west: -71.13,
+  },
+};
+
+export default function Home() {
+  const [searchParams, setSearchParams] = useState(null); // State to hold the search parameters for the Map
+
+  const handleSearchSubmit = (params) => {
+    setSearchParams(params);
+  };
+
+  const handleBostonMarkers = () => {
+    setSearchParams({
+      bounds: CONFIGURATION.bostonBounds, // Setting the bounds for Boston markers
+    });
+  };
+
   return (
-    <>
-      <head>
-        <title>Urban Refuge</title>
-      </head>
-      <body>
-        <Header />
-        <LandmarkMap />
-      </body>
-    </>
+    <div style={{ display: "flex", flexDirection: "row" }}>
+      <Forum
+        onSearchSubmit={handleSearchSubmit}
+        onBostonMarkers={handleBostonMarkers}
+      />
+      <Map searchParams={searchParams} />
+    </div>
   );
 }
-
-export default Home;
