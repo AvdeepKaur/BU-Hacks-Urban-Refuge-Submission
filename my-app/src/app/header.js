@@ -24,6 +24,14 @@ export default function Header() {
       >
         Map Refuge
       </p>
+      <nav style={{ marginLeft: "auto", display: "flex", gap: "15px" }}>
+        <Link to="/" style={linkStyle}>
+          Map
+        </Link>
+        <Link to="/about" style={linkStyle}>
+          About Us
+        </Link>
+      </nav>
     </div>
   );
 }
