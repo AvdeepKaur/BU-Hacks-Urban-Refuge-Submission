@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 const CONFIGURATION = {
   ctaTitle: "Load Locations",
   mapOptions: {
-    center: { lat: 42.3601, lng: -71.0589 }, // Center map on Boston
+    center: { lat: 42.3601, lng: -71.0589 },
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
@@ -21,7 +21,8 @@ const CONFIGURATION = {
       { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ visibility: "on" }] },
     ],
   },
-  markerIcon: "/images/blue_pin.png",
+  markerIconFullMatch: "/images/blue_pin.png",
+  markerIconPartialMatch: "/images/orange_pin.png",
   bostonBounds: {
     north: 42.405,
     south: 42.320,
@@ -101,13 +102,14 @@ export default function LandmarkMap() {
       const serviceTypes = location["Service Type"].split(",").map((service) => service.trim());
       const languages = location["Services offered in these languages"].split("-").map((lang) => lang.trim());
 
-      const matchedServices = selectedServices.some((service) => serviceTypes.includes(service));
-      const matchedLanguages = selectedLanguages.some((language) => languages.includes(language));
+      const matchedServices = selectedServices.filter((service) => serviceTypes.includes(service));
+      const matchedLanguages = selectedLanguages.filter((language) => languages.includes(language));
 
-      // Filter criteria based on selected services and languages
-      const shouldInclude = selectedServices.length > 0 ? matchedServices : matchedLanguages;
+      const isFullMatch =
+        matchedServices.length === selectedServices.length && matchedLanguages.length === selectedLanguages.length;
+      const isPartialMatch = matchedServices.length > 0 || matchedLanguages.length > 0;
 
-      if (shouldInclude) {
+      if (isFullMatch || isPartialMatch) {
         const fullAddress = `${location.Street}, ${location.City}`;
         geocoder.geocode({ address: fullAddress }, (results, status) => {
           if (status === "OK" && results[0]) {
@@ -118,7 +120,7 @@ export default function LandmarkMap() {
               position,
               title: location["Name of Organization"],
               icon: {
-                url: CONFIGURATION.markerIcon,
+                url: isFullMatch ? CONFIGURATION.markerIconFullMatch : CONFIGURATION.markerIconPartialMatch,
                 scaledSize: new google.maps.Size(30, 45),
               },
             });
@@ -126,8 +128,8 @@ export default function LandmarkMap() {
             newMarkers.push(marker);
 
             const matchedTags = `
-              <p><strong>Matched Services:</strong> ${selectedServices.filter((service) => serviceTypes.includes(service)).join(", ") || "None"}</p>
-              <p><strong>Matched Languages:</strong> ${selectedLanguages.filter((language) => languages.includes(language)).join(", ") || "None"}</p>
+              <p><strong>Matched Services:</strong> ${matchedServices.join(", ") || "None"}</p>
+              <p><strong>Matched Languages:</strong> ${matchedLanguages.join(", ") || "None"}</p>
             `;
 
             marker.addListener("click", () => {
@@ -274,3 +276,4 @@ const buttonStyle = {
   fontSize: "16px",
   cursor: "pointer",
 };
+
