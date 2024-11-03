@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 const CONFIGURATION = {
   ctaTitle: "Load Locations",
   mapOptions: {
-    center: { lat: 42.3601, lng: -71.0589 },
+    center: { lat: 42.3601, lng: -71.0589 }, // Center map on Boston
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
@@ -33,6 +33,7 @@ const CONFIGURATION = {
 export default function LandmarkMap() {
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
+  const [circle, setCircle] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [distance, setDistance] = useState("");
   const [unit, setUnit] = useState("miles");
@@ -77,15 +78,19 @@ export default function LandmarkMap() {
     }
   };
 
-  const clearMarkers = () => {
+  const clearMarkersAndCircle = () => {
     markers.forEach((marker) => marker.setMap(null));
     setMarkers([]);
+    if (circle) {
+      circle.setMap(null);
+      setCircle(null);
+    }
   };
 
   const plotAddresses = async () => {
     if (!map) return;
 
-    clearMarkers(); // Clear existing markers from the map
+    clearMarkersAndCircle();
 
     const addressData = await fetchAddresses();
     const geocoder = new google.maps.Geocoder();
@@ -148,10 +153,71 @@ export default function LandmarkMap() {
     );
   };
 
+  const searchLocation = () => {
+    if (!map || !searchQuery) return;
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: searchQuery }, (results, status) => {
+      if (status === "OK" && results[0]) {
+        const newLocation = results[0].geometry.location;
+        map.setCenter(newLocation);
+
+        const distanceInMiles = unit === "miles" ? parseFloat(distance) : parseFloat(distance) * 0.621371;
+        const zoomLevel = Math.round(15 - Math.log2(distanceInMiles));
+        map.setZoom(zoomLevel);
+
+        const newCircle = new google.maps.Circle({
+          map,
+          center: newLocation,
+          radius: distanceInMiles * 1609.34, // Convert miles to meters
+          fillColor: "#007bff",
+          fillOpacity: 0.2,
+          strokeColor: "#007bff",
+          strokeOpacity: 0.5,
+          strokeWeight: 1,
+        });
+
+        setCircle(newCircle);
+      } else {
+        console.error("Geocode was not successful for the following reason: " + status);
+        setError("Geocode was not successful. Please enter a valid address.");
+      }
+    });
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+
+    if (!searchQuery) {
+      setError("Please enter a valid address/city/country.");
+      return;
+    }
+
+    const parsedDistance = parseFloat(distance);
+    if (isNaN(parsedDistance) || parsedDistance <= 0) {
+      setError("Please enter a positive distance.");
+      return;
+    }
+
     setError("");
     await plotAddresses();
+    searchLocation();
+  };
+
+  const showBostonMarkers = async () => {
+    if (!map) return;
+
+    if (!markers.length) {
+      await plotAddresses();
+    }
+
+    const bostonBounds = new google.maps.LatLngBounds(
+      new google.maps.LatLng(CONFIGURATION.bostonBounds.south, CONFIGURATION.bostonBounds.west),
+      new google.maps.LatLng(CONFIGURATION.bostonBounds.north, CONFIGURATION.bostonBounds.east)
+    );
+
+    map.fitBounds(bostonBounds);
+    map.setZoom(12);
   };
 
   return (
@@ -167,8 +233,25 @@ export default function LandmarkMap() {
         <h3>Load Locations from CSV</h3>
         <form onSubmit={handleFormSubmit}>
           {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
+          <input
+            type="text"
+            placeholder="Search Address/City/Country"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
+          />
+          <input
+            type="number"
+            placeholder="Distance"
+            value={distance}
+            onChange={(e) => setDistance(e.target.value)}
+            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
+          />
+          <select value={unit} onChange={(e) => setUnit(e.target.value)} style={{ width: "100%", marginBottom: "10px", padding: "8px" }}>
+            <option value="miles">Miles</option>
+            <option value="kilometers">Kilometers</option>
+          </select>
 
-          {/* Checkbox list for Service Types */}
           <h4>Service Types</h4>
           {["Education", "Legal", "Housing/Shelter", "Healthcare", "Food", "Employment", "Cash Assistance", "Mental Health"].map((service) => (
             <div key={service}>
@@ -181,7 +264,6 @@ export default function LandmarkMap() {
             </div>
           ))}
 
-          {/* Checkbox list for Languages */}
           <h4>Languages</h4>
           {["English", "Spanish", "French", "Portuguese", "Haitian Creole", "Arabic", "Mandarin", "Cantonese", "Somali", "Swahili", "Dari", "Pashto", "Maay Maay", "Darija"].map((language) => (
             <div key={language}>
@@ -193,9 +275,9 @@ export default function LandmarkMap() {
               <label>{language}</label>
             </div>
           ))}
-
           <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
         </form>
+        <button onClick={showBostonMarkers} style={{ ...buttonStyle, marginTop: "10px", backgroundColor: "#6c757d" }}>Boston View</button>
       </div>
       <div id="map" style={{ height: "750px", width: "1000px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
