@@ -90,31 +90,38 @@ export default function LandmarkMap() {
 
   const plotAddresses = async () => {
     if (!map) return;
-
+  
     clearMarkersAndCircle();
-
+  
     const addressData = await fetchAddresses();
     const geocoder = new google.maps.Geocoder();
     const infowindow = new google.maps.InfoWindow();
     const newMarkers = [];
-
+  
     addressData.forEach((location) => {
       const serviceTypes = location["Service Type"].split(",").map((service) => service.trim());
       const languages = location["Services offered in these languages"].split("-").map((lang) => lang.trim());
-
+  
       const matchedServices = selectedServices.filter((service) => serviceTypes.includes(service));
       const matchedLanguages = selectedLanguages.filter((language) => languages.includes(language));
-
-      const isFullMatch =
-        matchedServices.length === selectedServices.length && matchedLanguages.length === selectedLanguages.length;
+  
+      const isFullMatch = matchedServices.length === selectedServices.length && matchedLanguages.length === selectedLanguages.length;
       const isPartialMatch = matchedServices.length > 0 || matchedLanguages.length > 0;
-
-      if (isFullMatch || isPartialMatch) {
+  
+      // New logic for partial match conditions:
+      const allowPartialMatch = 
+        selectedServices.length > 0 || // At least one service type selected
+        selectedLanguages.length > 1 || // Multiple languages selected
+        (selectedLanguages.length === 1 && selectedServices.length === 0); // Only one language selected, with no service type
+  
+      const shouldPlotMarker = isFullMatch || (isPartialMatch && allowPartialMatch);
+  
+      if (shouldPlotMarker) {
         const fullAddress = `${location.Street}, ${location.City}`;
         geocoder.geocode({ address: fullAddress }, (results, status) => {
           if (status === "OK" && results[0]) {
             const position = results[0].geometry.location;
-
+  
             const marker = new google.maps.Marker({
               map,
               position,
@@ -124,14 +131,14 @@ export default function LandmarkMap() {
                 scaledSize: new google.maps.Size(30, 45),
               },
             });
-
+  
             newMarkers.push(marker);
-
+  
             const matchedTags = `
               <p><strong>Matched Services:</strong> ${matchedServices.join(", ") || "None"}</p>
               <p><strong>Matched Languages:</strong> ${matchedLanguages.join(", ") || "None"}</p>
             `;
-
+  
             marker.addListener("click", () => {
               infowindow.setContent(`
                 <div>
@@ -148,9 +155,12 @@ export default function LandmarkMap() {
         });
       }
     });
-
+  
     setMarkers(newMarkers);
   };
+  
+  
+  
 
   const handleCheckboxChange = (setter, item) => {
     setter((prev) =>

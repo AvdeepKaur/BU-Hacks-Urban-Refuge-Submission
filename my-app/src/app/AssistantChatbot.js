@@ -14,7 +14,7 @@ const AssistantChatbot = () => {
   const [userLanguage, setUserLanguage] = useState(null);
   const [userServiceType, setUserServiceType] = useState(null);
 
-  const [conversationStep, setConversationStep] = useState(0); // Tracks the step in the question flow
+  const [conversationStep, setConversationStep] = useState(0);
   const messagesEndRef = useRef(null);
 
   const toggleChatbox = () => setIsOpen(!isOpen);
@@ -40,24 +40,22 @@ const AssistantChatbot = () => {
           complete: (result) => {
             const parsedData = result.data.map((item) => ({
               ...item,
-              // Tokenize the Service Type and Languages fields to allow partial matches
-              "Service Type": item["Service Type"]?.split(/,\s*/).map(service => service.trim()) || [],
-              "Languages": item["Languages"]?.split(/[-,\s]+/).map(language => language.trim()) || []
+              "Service Type": item["Service Type"]?.split(/,\s*/).map(type => type.trim()) || [],
+              "Languages": item["Languages"]?.split(/,\s*/).map(lang => lang.trim()) || []
             }));
 
             setResources(parsedData); // Store tokenized data in state
 
-            // Initialize Fuse.js with tighter matching options
+            // Initialize Fuse.js with looser matching options
             const fuseInstance = new Fuse(parsedData, {
               keys: [
-                { name: "Service Type", weight: 0.6 }, // Prioritize Service Type matching
-                { name: "Languages", weight: 0.4 },     // Prioritize Language matching
-                { name: "City/State/ZIP", weight: 0.3 },
+                { name: "Service Type", weight: 0.7 },
+                { name: "Languages", weight: 0.3 },
+                { name: "City/State/ZIP", weight: 0.2 },
               ],
-              threshold: 0.5, // Lower threshold for stricter matches
-              distance: 90, // Smaller distance for closer matches
-              includeMatches: true,
-              tokenize: true,
+              threshold: 0.6, // Looser matching
+              distance: 100,  // Allows more flexibility in match distance
+              ignoreLocation: true, // Ignores exact location of the match within text
             });
             setFuse(fuseInstance);
           },
@@ -72,8 +70,15 @@ const AssistantChatbot = () => {
 
   const searchResources = () => {
     if (!fuse) return [];
-    const query = `${userServiceType || ""} ${userLanguage || ""} ${userLocation || ""}`;
-    return fuse.search(query).map(result => result.item);
+  
+    // Build the query based on user inputs
+    const query = `${userServiceType || ""} ${userLanguage || ""} ${userLocation || ""}`.trim();
+  
+    // Run Fuse.js search with the query
+    const results = fuse.search(query);
+  
+    // Return only the top match if there are results
+    return results.length > 0 ? [results[0].item] : [];
   };
 
   const formatRecommendation = (resource) => (
@@ -101,7 +106,7 @@ const AssistantChatbot = () => {
         clearInterval(interval);
         setIsTyping(false);
       }
-    }, 25); // Faster typing effect
+    }, 25);
   };
 
   const resetConversation = () => {
@@ -121,17 +126,17 @@ const AssistantChatbot = () => {
 
     switch (conversationStep) {
       case 0:
-        botMessageContent = "LLet's start by getting your location. Could you please tell me your city or area?";
+        botMessageContent = "Let's start by getting your location. Could you please tell me your city or area?";
         setConversationStep(1);
         break;
       case 1:
         setUserLocation(input);
-        botMessageContent = "TThank you! What language(s) are you most comfortable with?";
+        botMessageContent = "Thank you! What language(s) are you most comfortable with?";
         setConversationStep(2);
         break;
       case 2:
         setUserLanguage(input);
-        botMessageContent = "GGot it! Lastly, what type of services are you looking for?";
+        botMessageContent = "Got it! Lastly, what type of services are you looking for?";
         setConversationStep(3);
         break;
       case 3:
@@ -142,7 +147,7 @@ const AssistantChatbot = () => {
           botMessageContent = formatRecommendation(matches[0]);
           resetConversation();
         } else {
-          botMessageContent = "II'm sorry, but I couldn't find any resources that match all your criteria. Let's start over. Please provide more specific details.";
+          botMessageContent = "I'm sorry, but I couldn't find any resources that match all your criteria. Let's start over. Please provide more specific details.";
           resetConversation();
         }
         break;
@@ -151,7 +156,6 @@ const AssistantChatbot = () => {
         resetConversation();
     }
 
-    // Start typing effect with an initial empty message to append letters to
     setMessages((prevMessages) => [...prevMessages, { role: "assistant", content: "" }]);
     if (typeof botMessageContent === "string") {
       displayTypingEffect(botMessageContent);
@@ -199,11 +203,11 @@ const chatButtonStyle = {
   right: "30px",
   backgroundColor: "#1f7ecb ",
   color: "white",
-  padding: "15px 20px", // Increased size
+  padding: "15px 20px",
   borderRadius: "25px",
   border: "none",
   cursor: "pointer",
-  fontSize: "16px", // Increased font size for better visibility
+  fontSize: "16px",
 };
 
 const closeButtonStyle = {
