@@ -8,7 +8,7 @@ const CONFIGURATION = {
     center: { lat: 42.3601, lng: -71.0589 },
     fullscreenControl: true,
     mapTypeControl: false,
-    streetViewControl: true,
+    streetViewControl: false,
     zoom: 12,
     zoomControl: true,
     maxZoom: 22,
@@ -243,20 +243,22 @@ export default function LandmarkMap() {
             <option value="miles">Miles</option>
             <option value="kilometers">Kilometers</option>
           </select>
+          <div style={{ paddingBottom: "10px" }}>
           <h4>Service Types</h4>
           {["Education", "Legal", "Housing/Shelter", "Healthcare", "Food", "Employment", "Cash Assistance", "Mental Health"].map((service) => (
-            <div key={service}>
+            <div key={service} style={{ display: "flex", alignItems: "center", gap: "8px",paddingBottom:"2px"}}>
               <input type="checkbox" checked={selectedServices.includes(service)} onChange={() => handleCheckboxChange(setSelectedServices, service)} />
               <label>{service}</label>
             </div>
           ))}
           <h4>Languages</h4>
           {["English", "Spanish", "French", "Portuguese", "Haitian Creole", "Arabic", "Mandarin", "Cantonese", "Somali", "Swahili", "Dari", "Pashto", "Maay Maay", "Darija"].map((language) => (
-            <div key={language}>
+            <div key={language} style={{ display: "flex", alignItems: "center", gap: "8px", paddingBottom:"2px"}}>
               <input type="checkbox" checked={selectedLanguages.includes(language)} onChange={() => handleCheckboxChange(setSelectedLanguages, language)} />
               <label>{language}</label>
             </div>
           ))}
+          </div>
           <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
         </form>
         <button onClick={showBostonMarkers} style={{ ...buttonStyle, marginTop: "10px", backgroundColor: "#6c757d" }}>Boston View</button>
