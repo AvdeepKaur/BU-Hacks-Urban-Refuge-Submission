@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import Forum from "./forumComponent.js";
 import Map from "./mapComponent.js";
 import LandmarkMap from "./map.js";
-
+import AssistantChatbot from "./AssistantChatbot.js";
 const CONFIGURATION = {
   bostonBounds: {
     north: 42.405,
@@ -34,6 +34,7 @@ export default function Home() {
       />
       <Map searchParams={searchParams} /> */}
       <LandmarkMap />
+      <AssistantChatbot />
     </div>
   );
 }
