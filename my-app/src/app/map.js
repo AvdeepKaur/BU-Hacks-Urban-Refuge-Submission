@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 const CONFIGURATION = {
   ctaTitle: "Load Locations",
   mapOptions: {
-    center: { lat: 42.3601, lng: -71.0589 }, // Center map on Boston
+    center: { lat: 42.3601, lng: -71.0589 },
     fullscreenControl: true,
     mapTypeControl: false,
     streetViewControl: true,
@@ -15,7 +15,7 @@ const CONFIGURATION = {
     styles: [
       { featureType: "all", elementType: "labels", stylers: [{ visibility: "on" }] },
       { featureType: "road", elementType: "geometry", stylers: [{ visibility: "on" }] },
-      { featureType: "poi.business", stylers: [{ visibility: "off" }] }, // Hide restaurants, stores, and other businesses
+      { featureType: "poi.business", stylers: [{ visibility: "off" }] },
       { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#aadaff", visibility: "on" }] },
       { featureType: "poi.museum", elementType: "geometry", stylers: [{ visibility: "on" }] },
       { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ visibility: "on" }] },
@@ -37,14 +37,9 @@ export default function LandmarkMap() {
   const [distance, setDistance] = useState("");
   const [unit, setUnit] = useState("miles");
   const [error, setError] = useState("");
-  const [markersLoaded, setMarkersLoaded] = useState(false); // Track if markers have been loaded
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
 
-
-   // State for selected service types and languages
-   const [selectedServices, setSelectedServices] = useState([]);
-   const [selectedLanguages, setSelectedLanguages] = useState([]);
-
-   
   useEffect(() => {
     const loadGoogleMapsAPI = () => {
       if (document.getElementById("google-maps-script")) return;
@@ -82,164 +77,96 @@ export default function LandmarkMap() {
     }
   };
 
+  const clearMarkers = () => {
+    markers.forEach((marker) => marker.setMap(null));
+    setMarkers([]);
+  };
 
-
-  
   const plotAddresses = async () => {
     if (!map) return;
+
+    clearMarkers(); // Clear existing markers from the map
 
     const addressData = await fetchAddresses();
     const geocoder = new google.maps.Geocoder();
     const infowindow = new google.maps.InfoWindow();
     const newMarkers = [];
 
-    // Filter addresses based on selected services and languages
-
-
-
-
-    
-
-
     addressData.forEach((location) => {
-      const fullAddress = `${location.Street}, ${location.City}`;
-      geocoder.geocode({ address: fullAddress }, (results, status) => {
-        if (status === "OK" && results[0]) {
-          
-          const position = results[0].geometry.location;
+      const serviceTypes = location["Service Type"].split(",").map(service => service.trim());
+      const languages = location["Services offered in these languages"].split("-").map(lang => lang.trim());
 
-          const marker = new google.maps.Marker({
-            map,
-            position,
-            title: location["Name of Organization"],
-            icon: {
-              url: CONFIGURATION.markerIcon,
-              scaledSize: new google.maps.Size(30, 45), // Set size of the icon
-            },
-          });
+      const matchedServices = selectedServices.filter((service) => serviceTypes.includes(service));
+      const matchedLanguages = selectedLanguages.filter((language) => languages.includes(language));
 
-          newMarkers.push(marker);
+      if (matchedServices.length > 0 || matchedLanguages.length > 0) {
+        const fullAddress = `${location.Street}, ${location.City}`;
+        geocoder.geocode({ address: fullAddress }, (results, status) => {
+          if (status === "OK" && results[0]) {
+            const position = results[0].geometry.location;
 
-          marker.addListener("click", () => {
-            infowindow.setContent(`
-              <div>
-                <h2>${location["Name of Organization"]}</h2>
-                <p>${location["Summary of Services"]}</p>
-                <p><strong>Address:</strong> ${fullAddress}</p>
-                <p><strong>Website:</strong> <a href="${location.Website}" target="_blank">${location.Website}</a></p>
-              </div>
-            `);
-            infowindow.open(map, marker);
-          });
-        }
-      });
+            const marker = new google.maps.Marker({
+              map,
+              position,
+              title: location["Name of Organization"],
+              icon: {
+                url: CONFIGURATION.markerIcon,
+                scaledSize: new google.maps.Size(30, 45),
+              },
+            });
+
+            newMarkers.push(marker);
+
+            const matchedTags = `
+              <p><strong>Matched Services:</strong> ${matchedServices.join(", ") || "None"}</p>
+              <p><strong>Matched Languages:</strong> ${matchedLanguages.join(", ") || "None"}</p>
+            `;
+
+            marker.addListener("click", () => {
+              infowindow.setContent(`
+                <div>
+                  <h2>${location["Name of Organization"]}</h2>
+                  <p>${location["Summary of Services"]}</p>
+                  <p><strong>Address:</strong> ${fullAddress}</p>
+                  ${matchedTags}
+                  <p><strong>Website:</strong> <a href="${location.Website}" target="_blank">${location.Website}</a></p>
+                </div>
+              `);
+              infowindow.open(map, marker);
+            });
+          }
+        });
+      }
     });
 
     setMarkers(newMarkers);
-    setMarkersLoaded(true); // Mark markers as loaded
   };
 
-
+  const handleCheckboxChange = (setter, item) => {
+    setter((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
+    );
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!searchQuery) {
-      setError("Please enter a valid address/city/country.");
-      return;
-    }
-
-    const parsedDistance = parseFloat(distance);
-    if (isNaN(parsedDistance) || parsedDistance <= 0) {
-      setError("Please enter a positive distance.");
-      return;
-    }
-
     setError("");
     await plotAddresses();
-    searchLocation();
-  };
-
-  const searchLocation = () => {
-    if (!map || !searchQuery) return;
-
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ address: searchQuery }, (results, status) => {
-      if (status === "OK" && results[0]) {
-        const newLocation = results[0].geometry.location;
-        map.setCenter(newLocation);
-
-        const distanceInMiles = unit === "miles" ? parseFloat(distance) : parseFloat(distance) * 0.621371;
-        const zoomLevel = Math.round(15 - Math.log2(distanceInMiles));
-        map.setZoom(zoomLevel);
-
-        // new google.maps.Marker({
-        //   position: newLocation,
-        //   map,
-        //   title: `Location: ${searchQuery}`,
-        // });
-      } else {
-        console.error("Geocode was not successful for the following reason: " + status);
-        setError("Geocode was not successful. Please enter a valid address.");
-      }
-    });
-  };
-
-  const showBostonMarkers = async () => {
-    if (!map) return;
-
-    // Load markers if they haven't been loaded yet
-    if (!markersLoaded) {
-      await plotAddresses();
-    }
-
-    const bostonBounds = new google.maps.LatLngBounds(
-      new google.maps.LatLng(CONFIGURATION.bostonBounds.south, CONFIGURATION.bostonBounds.west),
-      new google.maps.LatLng(CONFIGURATION.bostonBounds.north, CONFIGURATION.bostonBounds.east)
-    );
-
-    map.fitBounds(bostonBounds); // Adjust the map to fit Boston markers
-    map.setZoom(12); // Set to default zoom level for Boston view
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "row", justifyContent: "center", gap: "20px" }}>
       <div style={{ width: "300px", backgroundColor: "#f0f0f0", padding: "20px", borderRadius: "8px" }}>
-       
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom:"15px"}}>
-  <img 
-    src="/images/urban.png" 
-    alt="MapRefuge Logo" 
-    style={{ width: "100px", height: "auto" }} // Adjust the size as needed
-  />
-  <p style={{ fontSize: "35px", fontFamily: "Cocomat Pro", fontWeight: "bold", textTransform: "uppercase", margin: "0 auto" }}> 
-    Map Refuge
-  </p>
-</div>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", paddingBottom: "15px" }}>
+          <img src="/images/urban.png" alt="MapRefuge Logo" style={{ width: "100px", height: "auto" }} />
+          <p style={{ fontSize: "35px", fontFamily: "Cocomat Pro", fontWeight: "bold", textTransform: "uppercase", margin: "0 auto" }}>
+            Map Refuge
+          </p>
+        </div>
 
-        
-        
-        
         <h3>Load Locations from CSV</h3>
         <form onSubmit={handleFormSubmit}>
           {error && <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>}
-          <input
-            type="text"
-            placeholder="Search Address/City/Country"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
-          />
-          <input
-            type="number"
-            placeholder="Distance"
-            value={distance}
-            onChange={(e) => setDistance(e.target.value)}
-            style={{ width: "100%", marginBottom: "10px", padding: "8px" }}
-          />
-          <select value={unit} onChange={(e) => setUnit(e.target.value)} style={{ width: "100%", marginBottom: "10px", padding: "8px" }}>
-            <option value="miles">Miles</option>
-            <option value="kilometers">Kilometers</option>
-          </select>
 
           {/* Checkbox list for Service Types */}
           <h4>Service Types</h4>
@@ -266,9 +193,9 @@ export default function LandmarkMap() {
               <label>{language}</label>
             </div>
           ))}
+
           <button type="submit" style={buttonStyle}>{CONFIGURATION.ctaTitle}</button>
         </form>
-        <button onClick={showBostonMarkers} style={{ ...buttonStyle, marginTop: "10px", backgroundColor: "#6c757d" }}>Boston View</button>
       </div>
       <div id="map" style={{ height: "750px", width: "1000px", border: "1px solid #ddd", borderRadius: "8px" }}></div>
     </div>
