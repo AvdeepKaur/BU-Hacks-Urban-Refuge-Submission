@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import Forum from "./forumComponent.js";
 import Map from "./mapComponent.js";
+import LandmarkMap from "./map.js";
 
 const CONFIGURATION = {
   bostonBounds: {
@@ -13,25 +14,26 @@ const CONFIGURATION = {
 };
 
 export default function Home() {
-  const [searchParams, setSearchParams] = useState(null); // State to hold the search parameters for the Map
+  // const [searchParams, setSearchParams] = useState(null); // State to hold the search parameters for the Map
 
-  const handleSearchSubmit = (params) => {
-    setSearchParams(params);
-  };
+  // const handleSearchSubmit = (params) => {
+  //   setSearchParams(params);
+  // };
 
-  const handleBostonMarkers = () => {
-    setSearchParams({
-      bounds: CONFIGURATION.bostonBounds, // Setting the bounds for Boston markers
-    });
-  };
+  // const handleBostonMarkers = () => {
+  //   setSearchParams({
+  //     bounds: CONFIGURATION.bostonBounds, // Setting the bounds for Boston markers
+  //   });
+  // };
 
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
-      <Forum
+      {/* <Forum
         onSearchSubmit={handleSearchSubmit}
         onBostonMarkers={handleBostonMarkers}
       />
-      <Map searchParams={searchParams} />
+      <Map searchParams={searchParams} /> */}
+      <LandmarkMap />
     </div>
   );
 }
